@@ -10,7 +10,7 @@ from openpyxl import Workbook, load_workbook
 CSV_FILE = "nbu_workers.csv"
 XLSX_FILE = "nbu_workers.xlsx"
 PROGRESS_FILE = "progress.json"
-HEADERS = ["ПІБ", "Посада", "Місце роботи", "ID декларації", "Дата подання", "Зв'язок з РФ", "Причина підозри",
+HEADERS = ["ПІБ", "Посада", "Місце роботи", "ID декларації", "Дата подання", "Зв'язок з рф", "Причина підозри",
            "Посилання"]
 
 API_LIST_URL = "https://public-api.nazk.gov.ua/v2/documents/list"
@@ -23,13 +23,13 @@ def is_related_to_russia(declaration: dict) -> tuple[bool, str]:
         step1 = declaration.get("data", {}).get("step_1", {}).get("data", {})
         nui = step1.get("non_ukraine_identity", {})
 
-        # 1. Проживання або громадянство в Росії
+        # 1. Проживання або громадянство в росії
         if step1.get("actual_country") == "180":
             return True, "actual_country == 180"
         if step1.get("country") == "180":
             return True, "country == 180"
 
-        # 2. Іноземний документ від РФ
+        # 2. Іноземний документ від рф
         for identity in nui.values():
             if identity.get("nui_document_country") == "180":
                 return True, "nui_document_country == 180"
@@ -37,7 +37,7 @@ def is_related_to_russia(declaration: dict) -> tuple[bool, str]:
         # 3. Пошук у всіх текстових полях step_1
         step1_text = str(step1).lower()
         if any(kw in step1_text for kw in ["росія", "russia", "російська", "russian"]):
-            return True, "Текст у step_1 містить згадку про РФ"
+            return True, "Текст у step_1 містить згадку про рф"
 
         # 4. Пошук по джерелах доходів, нерухомості, активах
         for key in ["step_3", "step_4", "step_5", "step_6", "step_7", "step_8", "step_9"]:
@@ -45,7 +45,7 @@ def is_related_to_russia(declaration: dict) -> tuple[bool, str]:
             section_text = str(section).lower()
             if any(kw in section_text for kw in
                    ["росія", "russia", "російська", "russian", '"country":"180"', '"citizenship":"180"']):
-                return True, f"Дані з {key} містять згадку про РФ"
+                return True, f"Дані з {key} містять згадку про рф"
 
         # 5. Перевірка родичів — step_2
         relatives = declaration.get("data", {}).get("step_2", {}).get("data", {}).get("relatives", {})
@@ -53,7 +53,7 @@ def is_related_to_russia(declaration: dict) -> tuple[bool, str]:
             rel_text = str(rel).lower()
             if any(kw in rel_text for kw in
                    ["росія", "russia", "російська", "russian", '"country":"180"', '"citizenship":"180"']):
-                return True, "Родич(і) пов'язані з РФ (step_2)"
+                return True, "Родич(і) пов'язані з рф (step_2)"
 
     except Exception as e:
         return False, f"Помилка: {e}"
@@ -165,7 +165,7 @@ def process_range(start_unix, end_unix, existing_ids):
                         "Місце роботи": workplace,
                         "ID декларації": doc_id,
                         "Дата подання": date,
-                        "Зв'язок з РФ": "Так" if related else "Ні",
+                        "Зв'язок з рф": "Так" if related else "Ні",
                         "Причина підозри": reason if related else "",
                         "Посилання": link
                     }
